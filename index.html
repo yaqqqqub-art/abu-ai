@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Abu AI — Remote Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google Identity Services - powers the "Continue with Google" button below -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#0b0d0b;
+    --panel:#141712;
+    --panel-2:#191d15;
+    --line:#262b22;
+    --green:#4CAF50;
+    --green-soft:#8fd18f;
+    --green-dim:#2f6b32;
+    --text:#eef1ec;
+    --muted:#98a195;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI',Arial,sans-serif;
+    line-height:1.55;
+  }
+  .mono{font-family:'Consolas','SFMono-Regular',Menlo,monospace}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+
+  /* ---------- hero ---------- */
+  header{padding:70px 0 44px;text-align:center}
+  .badge{width:88px;height:88px;margin:0 auto 20px;display:block}
+  h1{font-size:46px;margin:0 0 10px;letter-spacing:-0.5px}
+  h1 .accent{color:var(--green)}
+  .tagline{color:var(--muted);font-size:17px;margin:0 0 32px;max-width:36ch;margin-left:auto;margin-right:auto}
+
+  .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:14px 26px;border-radius:10px;text-decoration:none;
+    font-size:15px;font-weight:600;border:1px solid transparent;
+    transition:transform .12s ease, background .15s ease;
+  }
+  .btn:active{transform:scale(0.97)}
+  .btn-primary{background:var(--green);color:#08130a}
+  .btn-primary:hover{background:#5cc161}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--green)}
+
+  .divider-or{display:flex;align-items:center;gap:12px;max-width:280px;margin:18px auto 0;color:var(--muted);font-size:12px}
+  .divider-or::before,.divider-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .gsi-wrap{display:flex;justify-content:center;margin-top:14px}
+  .connect-box{display:none;max-width:320px;margin:16px auto 0;background:var(--panel);
+               border:1px solid var(--line);border-radius:10px;padding:14px;text-align:left}
+  .connect-box.show{display:block}
+  .connect-box label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  .connect-box input{width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);
+               background:#0e100d;color:var(--text);font-family:'Consolas',monospace;font-size:13px;box-sizing:border-box}
+  .connect-box .go{margin-top:8px;width:100%;padding:9px;border-radius:7px;border:none;
+               background:var(--green);color:#08130a;font-weight:600;cursor:pointer}
+  .connect-box .hint{font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* ---------- sections ---------- */
+  section{margin:64px 0}
+  h2{font-size:26px;margin:0 0 8px}
+  .lede{color:var(--muted);font-size:15px;max-width:56ch;margin:0 0 28px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:700px){ .grid2{grid-template-columns:1fr} h1{font-size:32px} }
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px}
+  .card h3{margin:0 0 10px;font-size:19px;display:flex;align-items:center;gap:10px}
+  .card p{color:var(--muted);font-size:14px;margin:10px 0}
+  .card ul{color:var(--text);font-size:14px;padding-left:20px;margin:14px 0}
+  .card li{margin:6px 0}
+
+  code{
+    background:#0e100d;border:1px solid var(--line);border-radius:6px;
+    padding:2px 8px;font-family:'Consolas','SFMono-Regular',Menlo,monospace;
+    font-size:13px;color:#c9f0cb;
+  }
+
+  .divider{height:1px;background:var(--line);margin:64px 0}
+
+  /* ---------- apps section: phone-style mock panel ---------- */
+  .apps-layout{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:start}
+  @media (max-width:700px){ .apps-layout{grid-template-columns:1fr} }
+
+  .phone-mock{
+    background:#08090a;border:1px solid var(--line);border-radius:26px;
+    padding:16px;box-shadow:0 30px 60px -30px rgba(0,0,0,.7);
+  }
+  .phone-mock .screen{background:var(--panel);border-radius:16px;padding:14px}
+  .phone-mock .screen-title{font-size:12px;color:var(--muted);margin:0 0 10px;text-align:center}
+  .app-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 10px;border-radius:8px;background:var(--panel-2);margin-bottom:8px;
+    font-size:13px;
+  }
+  .app-row:last-child{margin-bottom:0}
+  .app-open{
+    font-size:11px;color:#08130a;background:var(--green);border-radius:6px;
+    padding:4px 10px;font-weight:600;
+  }
+
+  .apps-explain ol{color:var(--text);font-size:14px;padding-left:20px;margin:6px 0 20px}
+  .apps-explain li{margin:8px 0}
+
+  .add-form-mock{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .add-form-mock .row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .add-form-mock .field{
+    flex:1;min-width:140px;background:#0e100d;border:1px solid var(--line);border-radius:7px;
+    padding:9px 10px;font-size:13px;color:var(--muted);
+  }
+  .add-form-mock .go{background:var(--green);color:#08130a;border:none;border-radius:7px;padding:0 16px;font-size:13px;font-weight:600}
+  .add-form-mock .example{font-size:12px;color:var(--muted);margin:8px 0 0}
+  .add-form-mock .example b{color:var(--green-soft);font-weight:600}
+
+  /* ---------- setup steps (genuine sequence) ---------- */
+  .steps{counter-reset:step}
+  .step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .step:last-child{border-bottom:none}
+  .step-num{
+    counter-increment:step;width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+    background:var(--panel-2);border:1px solid var(--green-dim);color:var(--green);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  }
+  .step-num::before{content:counter(step)}
+  .step-body b{display:block;margin-bottom:2px}
+  .step-body span{color:var(--muted);font-size:14px}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:40px 0 60px;border-top:1px solid var(--line);margin-top:20px}
+  footer .warn{color:#d8b84a}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <svg class="badge" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="32" cy="32" r="29" fill="#132a17" stroke="#4CAF50" stroke-width="3"/>
+    <text x="32" y="41" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#4CAF50" text-anchor="middle">A</text>
+    <circle cx="32" cy="13" r="3" fill="#4CAF50"/>
+    <line x1="32" y1="16" x2="32" y2="21" stroke="#4CAF50" stroke-width="2"/>
+  </svg>
+  <h1>Abu <span class="accent">AI</span></h1>
+  <p class="tagline">Turn your phone into a remote control for your own PC — screen, mouse, keyboard, and now its apps too.</p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="AbuAI_Desktop.zip" download>⬇ Download for PC</a>
+    <a class="btn btn-ghost" href="#" title="Coming soon">📱 Download for Phone — Abu AI Remote</a>
+    <a class="btn btn-ghost" href="#apps">See the Apps launcher</a>
+  </div>
+
+  <div class="divider-or">or jump straight to your PC</div>
+  <!--
+    "Continue with Google" - Google Identity Services (official, no library needed).
+    THIS BUTTON NEEDS ONE THING FROM YOU FIRST: a free Client ID.
+      1. Go to https://console.cloud.google.com/apis/credentials
+      2. Create an "OAuth client ID" -> Application type: Web application
+      3. Under "Authorized JavaScript origins" add the exact URL this page
+         will be hosted at (e.g. https://yourname.github.io)
+      4. Copy the Client ID it gives you and paste it below, replacing
+         YOUR_GOOGLE_CLIENT_ID.
+    Until you do that, the button still renders but Google will reject the
+    sign-in - this can't be faked with a placeholder ID, Google checks it
+    for real.
+  -->
+  <div id="g_id_onload"
+       data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+       data-callback="handleGoogleSignIn">
+  </div>
+  <div class="gsi-wrap">
+    <div class="g_id_signin" data-type="standard" data-theme="filled_black"
+         data-size="large" data-shape="pill" data-text="continue_with"></div>
+  </div>
+
+  <!-- Works right now, no Google Client ID needed - same destination either way. -->
+  <div class="gsi-wrap" style="margin-top:10px">
+    <button class="btn btn-ghost" onclick="continueDirect()">▶ Continue to my PC</button>
+  </div>
+
+  <!-- After Google sign-in, we still need to know YOUR PC's address on your
+       Wi-Fi (this webpage has no way to discover that by itself) - ask
+       once, then remember it in this browser for next time. -->
+  <div class="connect-box" id="connectBox">
+    <label for="pcAddr">তোমার PC-এর address (Abu AI Desktop-এর window-এ দেখানো আছে):</label>
+    <input type="text" id="pcAddr" placeholder="192.168.1.207:5000">
+    <button class="go" onclick="goToPC()">Connect →</button>
+    <div class="hint">এই address মনে রাখা হবে এই ব্রাউজারে, পরের বার আর জিজ্ঞেস করবে না।</div>
+  </div>
+  </header>
+
+<script>
+function handleGoogleSignIn(response){
+  // response.credential is a Google JWT - this static page has no backend
+  // to verify it against, so we only use it to know a name/avatar arrived;
+  // the actual login on your PC still runs through Abu AI's own account
+  // system (Username/Password, created from the Abu AI Desktop window).
+  const saved = localStorage.getItem('abuai_pc_addr');
+  if (saved){
+    goToAddr(saved);
+  } else {
+    document.getElementById('connectBox').classList.add('show');
+  }
+}
+function continueDirect(){
+  // Same destination as "Continue with Google", but works immediately -
+  // no Google Client ID setup required. e.g. http://192.168.1.207:5000
+  const saved = localStorage.getItem('abuai_pc_addr');
+  if (saved){
+    goToAddr(saved);
+  } else {
+    document.getElementById('connectBox').classList.add('show');
+  }
+}
+function goToPC(){
+  const val = document.getElementById('pcAddr').value.trim();
+  if(!val) return;
+  localStorage.setItem('abuai_pc_addr', val);
+  goToAddr(val);
+}
+function goToAddr(addr){
+  const url = addr.startsWith('http') ? addr : 'http://' + addr;
+  window.location.href = url;
+}
+</script>
+
+<div class="wrap">
+
+  <section class="grid2">
+    <div class="card">
+      <h3>🖥 Abu AI Desktop</h3>
+      <p>Runs on your computer. Streams your screen and lets your phone move the mouse, type, and open apps.</p>
+      <ul>
+        <li>Plain Python script, or a double-click <code>.exe</code> — no Python needed after that</li>
+        <li>Your own Username + Password, set the first time you run it</li>
+        <li>Up to 3 phones/accounts connected at once</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📱 Abu AI Remote</h3>
+      <p>Nothing to install on the phone — it's a page your PC serves. Open it in Chrome or Safari and log in.</p>
+      <ul>
+        <li>Full Screen, Touchpad, Game Controller</li>
+        <li>Send/receive photos &amp; files with the PC</li>
+        <li>Share your phone's screen back to the PC</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="apps">
+    <h2>Open PC apps from your phone</h2>
+    <p class="lede">The Apps panel on your phone lists programs on the PC — tap one to open it there, no need to walk over to the keyboard. Add any app you use often.</p>
+
+    <div class="apps-layout">
+      <div class="phone-mock">
+        <div class="screen">
+          <p class="screen-title">Apps · your phone</p>
+          <div class="app-row"><span>Chrome</span><span class="app-open">Open</span></div>
+          <div class="app-row"><span>Notepad</span><span class="app-open">Open</span></div>
+          <div class="app-row"><span>Calculator</span><span class="app-open">Open</span></div>
+          <div class="app-row"><span>File Explorer</span><span class="app-open">Open</span></div>
+          <div class="app-row"><span>Spotify</span><span class="app-open">Open</span></div>
+        </div>
+      </div>
+
+      <div class="apps-explain">
+        <ol>
+          <li>Open the <b>Apps</b> panel on your phone (same page you use to control the PC).</li>
+          <li>Type a <b>name</b> for the app, and its <b>path or command</b> — for well-known apps a short word like <code>chrome</code> or <code>notepad</code> is enough.</li>
+          <li>Tap <b>Add</b>. It now shows up in the list on every connected phone, ready to open with one tap.</li>
+        </ol>
+
+        <div class="add-form-mock">
+          <div class="row">
+            <div class="field">Spotify</div>
+            <div class="field">C:\Users\You\AppData\Roaming\Spotify\Spotify.exe</div>
+            <div class="go">Add</div>
+          </div>
+          <p class="example">For apps that aren't a standard Windows program, use the app's full <b>.exe</b> path — right-click its desktop shortcut → Properties → "Target" to find it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section>
+    <h2>Getting Abu AI running</h2>
+    <p class="lede">Four steps, once — after that it's just opening a browser tab on your phone.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <b>Unzip and open Abu AI Desktop</b>
+          <span>Double-click <code>Abu AI Desktop.exe</code> to launch it — see README.txt inside the download if you'd rather run it from source.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <b>Create your Username + Password</b>
+          <span>Asked once, the first time it runs — typed straight into the terminal window.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <b>Find your PC's IP address</b>
+          <span>Windows: <code>ipconfig</code> → look for "IPv4 Address"</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <b>Open it on your phone</b>
+          <span>Same Wi-Fi network, then visit <code>http://&lt;pc-ip&gt;:5000</code> and log in.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="wrap">
+  <p class="warn">⚠ Local Wi-Fi only — anyone with a valid login on your network can control this PC. Don't expose it to the open internet.</p>
+  <p>Abu AI — a personal remote-control project.</p>
+</footer>
+
+</body>
+</html>
